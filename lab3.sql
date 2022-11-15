@@ -47,12 +47,16 @@ inner join title on loan.title_no = title.title_no
 
 -- 3.
 select convert(date, in_date) as 'Data_oddania',
-       datediff(day, out_date, in_date) as 'Przetrzymywano_dni',
+       datediff(day, in_date, due_date) as 'Przetrzymywano_dni',
        convert(decimal(10, 2), fine_paid) as 'Zapłacona_kara'
 from loanhist
 inner join title on loanhist.title_no = title.title_no
-where title = 'Tao Teh King' and isnull(fine_paid, 0) > 0
+where title = 'Tao Teh King' and
+--       isnull(fine_paid, 0) > 0 and
+      datediff(day, in_date, due_date) > 0
 order by Data_oddania desc, Przetrzymywano_dni, Zapłacona_kara
+
+
 
 select isbn
 from reservation
@@ -61,7 +65,7 @@ where firstname + ' ' + middleinitial + '. ' + lastname = 'Stephen A. Graff'
 
 
 -- Ćwiczenie (3) - inner join, left outer join, cross join, łączenie trzech tabel
-use Northwind
+use Northwind2
 
 -- 1.
 select ProductName,
@@ -118,7 +122,7 @@ order by CompanyName
 use library
 
 -- 1.
-select m.firstname + ' ' + m.middleinitial + '.' as 'Imię',
+select m.firstname + ' ' + m.middleinitial + '.' as 'Imiona',
        m.lastname as 'Nazwisko',
        convert(date, birth_date) as 'Data_urodzenia',
        street + ', ' + city + ', ' + state + ', USA' as 'Adres'
@@ -128,9 +132,9 @@ inner join member m
 inner join adult a
     on a.member_no = juvenile.adult_member_no
 
-order by Nazwisko, Imię, Data_urodzenia, Adres
+order by Nazwisko, Imiona, Data_urodzenia, Adres
 
--- 1.
+-- 2.
 select m.firstname as 'Imię',
        m.lastname as 'Nazwisko',
        parent.firstname + ' ' + parent.middleinitial + '. ' + parent.lastname as 'Rodzic',
@@ -144,16 +148,15 @@ inner join adult a
 inner join member parent
     on parent.member_no = a.member_no
 
-order by Nazwisko, Imię, parent.lastname, Rodzic, Data_urodzenia, Adres
+order by Nazwisko, Imię, state, parent.lastname, Rodzic, Data_urodzenia, Adres
 
 
 -- Ćwiczenia (5) self join
-use Northwind
+use Northwind2
 
 -- 1.
 select Supervisor.EmployeeID as 'EmployeeID',
-       Supervisor.FirstName,
-       Supervisor.LastName,
+       Supervisor.FirstName + ' ' + Supervisor.LastName as 'Employee',
        Employees.FirstName + ' ' + Employees.LastName as 'Subordinate',
        Employees.EmployeeID as 'SubordinateID'
 from Employees
@@ -182,7 +185,7 @@ where year(j.birth_date) < 1996
 group by zip + ' ' + street + ', ' + city + ', ' + state + ', USA'
 
 -- 4.
-select distinct zip + ' ' + street + ', ' + city + ', ' + state + ', USA' as 'Adres',
+select zip + ' ' + street + ', ' + city + ', ' + state + ', USA' as 'Adres',
        count(distinct adult.member_no) as 'Liczba_członków'
 from adult
 inner join juvenile j
@@ -192,6 +195,33 @@ left outer join loan l
 where year(j.birth_date) < 1996 and
       (due_date is null or due_date > getdate())
 group by zip + ' ' + street + ', ' + city + ', ' + state + ', USA'
+order by Liczba_członków
 
 
-select * from loan
+
+select
+       firstname,
+       lastname,
+       count(*) as 'Children'
+from member
+inner join adult a
+    on member.member_no = a.member_no
+inner join juvenile j
+    on a.member_no = j.adult_member_no
+where state = 'AZ'
+group by a.member_no, firstname, lastname
+having count(*) > 2
+UNION
+select
+       firstname,
+       lastname,
+       count(*) as 'Children'
+from member
+inner join adult a
+    on member.member_no = a.member_no
+inner join juvenile j
+    on a.member_no = j.adult_member_no
+where state = 'CA'
+group by a.member_no, firstname, lastname
+having count(*) > 3
+order by lastname, firstname, Children
