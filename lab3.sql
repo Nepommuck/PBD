@@ -151,7 +151,7 @@ inner join member parent
 order by Nazwisko, Imię, state, parent.lastname, Rodzic, Data_urodzenia, Adres
 
 
--- Ćwiczenia (5) self join
+-- Ćwiczenie (5) self join
 use Northwind2
 
 -- 1.
@@ -198,7 +198,46 @@ group by zip + ' ' + street + ', ' + city + ', ' + state + ', USA'
 order by Liczba_członków
 
 
+-- Ćwiczenie (6) self join
+use library
 
+-- 1.
+select firstname + ' ' + lastname as Name,
+       zip + ' ' + street + ', ' + city + ', ' + state + ', USA' as Address
+from adult
+inner join member m
+    on m.member_no = adult.member_no
+
+-- 2.
+select copy.isbn as isbn,
+       copy_no, on_loan, title, translation, cover
+from copy
+inner join title t
+    on t.title_no = copy.title_no
+inner join item i
+    on copy.isbn = i.isbn
+where copy.isbn in (1, 500, 1000)
+order by isbn, copy_no
+
+-- 3.
+select member.member_no as Number,
+       firstname + ' ' + middleinitial + '. ' + lastname as Name,
+       r.isbn isbn_reservation,
+       title,
+       translation,
+       Convert(date, log_date) as Date,
+       Convert(time, log_date) as Time
+
+from member
+left outer join reservation r on
+    member.member_no = r.member_no
+inner join item i
+    on r.isbn = i.isbn
+inner join title t
+    on t.title_no = i.title_no
+where member.member_no in (250, 342, 1675)
+
+-- 4.
 select
        firstname,
        lastname,
@@ -211,10 +250,30 @@ inner join juvenile j
 where state = 'AZ'
 group by a.member_no, firstname, lastname
 having count(*) > 2
-UNION
+
+
+-- Ćwiczenie (7) self join, union
+
+-- 1.
 select
        firstname,
        lastname,
+       state,
+       count(*) as 'Children'
+from member
+inner join adult a
+    on member.member_no = a.member_no
+inner join juvenile j
+    on a.member_no = j.adult_member_no
+where state = 'AZ'
+group by a.member_no, firstname, lastname, state
+having count(*) > 2
+
+union
+select
+       firstname,
+       lastname,
+       state,
        count(*) as 'Children'
 from member
 inner join adult a
@@ -222,6 +281,7 @@ inner join adult a
 inner join juvenile j
     on a.member_no = j.adult_member_no
 where state = 'CA'
-group by a.member_no, firstname, lastname
+group by a.member_no, firstname, lastname, state
 having count(*) > 3
-order by lastname, firstname, Children
+
+order by state, Children desc, lastname, firstname
